@@ -1,12 +1,12 @@
 # %% [markdown]
-# # 02 — Preprocessing and Modeling
+# # 02 - Preprocessing and Modeling
 #
-# **Goal:** Train a logistic regression baseline and a random forest, evaluate both with
-# AUC and precision/recall, and decide which model goes into production.
+# **Goal:** Train a logistic regression baseline and a random forest, then compare
+# whether the more complex model is actually worth using.
 #
 # Logistic regression first because it's interpretable and gives the business a coefficient
-# story. Random forest as a cross-check — if it dramatically outperforms LR we have
-# non-linearities worth exploring.
+# story. Random forest is the cross-check: if it clearly beats LR, there may be
+# non-linear patterns worth exploring.
 
 # %%
 import pandas as pd
@@ -118,11 +118,11 @@ print(f"F1:        {f1_score(y_test, rf_pred):.4f}")
 #
 # AUCs are within 0.005 of each other. The interesting result is that LR has *higher*
 # recall and F1 at the default threshold. With this dataset, the simpler model carries
-# its weight — there are no non-linearities the forest is uniquely catching.
+# its weight. The random forest is not finding enough extra signal to change the
+# recommendation.
 #
-# This is the right place to push back on the instinct to ship the more complex model
-# just because it's more complex. LR wins on interpretability, runs faster in production,
-# and matches RF on every metric that matters.
+# This is where I would push back on choosing the more complex model just because it
+# looks more advanced. LR is easier to explain, and the performance tradeoff is tiny.
 
 # %%
 fig, axes = plt.subplots(1, 2, figsize=(14, 5.5))
@@ -160,9 +160,8 @@ plt.show()
 # %% [markdown]
 # ## Verdict
 #
-# Take logistic regression to production. RF stays as a sanity check during model
-# monitoring — if its AUC drifts away from LR's by more than 2 points in retraining,
-# something's changed in the underlying customer mix and we re-investigate.
+# Use logistic regression as the main model. Keep RF as a comparison model during
+# retraining; if the gap gets wider later, the customer mix may have changed.
 #
 # Next notebook: the default 0.5 threshold is almost certainly wrong for this business.
 # Find the threshold that maximizes expected dollar value, not F1.

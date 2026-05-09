@@ -1,5 +1,5 @@
 # %% [markdown]
-# # 01 — Exploratory Data Analysis
+# # 01 - Exploratory Data Analysis
 #
 # **Goal:** Understand who churns and where the signal lives before training anything.
 # By the end of this notebook you should be able to answer:
@@ -39,7 +39,7 @@ print(f"\nMissing values: {df.isnull().sum().sum()}")
 # %% [markdown]
 # ## Cleaning: TotalCharges
 #
-# `TotalCharges` is loaded as object — it has whitespace strings for brand-new customers
+# `TotalCharges` is loaded as object - it has whitespace strings for brand-new customers
 # whose tenure is 0. Convert to numeric and check the damage.
 
 # %%
@@ -57,7 +57,7 @@ print(f"Overall churn rate: {df['Churn_bin'].mean():.1%}")
 # %% [markdown]
 # ## 1. Churn distribution
 #
-# Baseline first. About 1 in 4 customers churn. That's our reference point — any segment
+# Baseline first. About 1 in 4 customers churn. That's our reference point - any segment
 # above this rate is overrepresented in churn.
 
 # %%
@@ -116,13 +116,13 @@ plt.show()
 
 # %% [markdown]
 # **Read:** First-year customers churn at 47%, dropping to 9.5% by year four. Retention
-# spend should be front-loaded — the first 12 months are where customers decide whether
+# spend should be front-loaded - the first 12 months are where customers decide whether
 # they're staying or shopping around.
 
 # %% [markdown]
 # ## 3. Monthly charges
 #
-# Higher bills → more churn? Not as cleanly as you'd think. The distribution shows
+# Higher bills -> more churn? Not as cleanly as you'd think. The distribution shows
 # something more useful.
 
 # %%
@@ -138,8 +138,8 @@ plt.savefig(VISUALS_DIR / "03_charges_by_churn.png", dpi=120, bbox_inches="tight
 plt.show()
 
 # %% [markdown]
-# **Read:** Stayers cluster at the low end (around \$20–\$30 — the phone-only customers).
-# Churners are concentrated in the \$70–\$100 band, which lines up with fiber-optic
+# **Read:** Stayers cluster at the low end (around \$20-\$30 - the phone-only customers).
+# Churners are concentrated in the \$70-\$100 band, which lines up with fiber-optic
 # internet customers. The "high charges, less than a year of tenure, month-to-month
 # contract" customer is going to come back as the headline segment in the modeling work.
 

@@ -1,10 +1,11 @@
 # %% [markdown]
-# # 04 — Segments and Recommendations
+# # 04 - Segments and Recommendations
 #
-# **Goal:** Translate the model into a business memo. Three things have to land:
-# 1. Which features are actually driving churn predictions, in plain English
+# **Goal:** Turn the model output into something a retention team could use.
+# Three things have to land:
+# 1. Which features are driving churn predictions
 # 2. Where the customers sit on a risk spectrum
-# 3. A specific recommendation for the retention team, with numbers attached
+# 3. A specific recommendation with numbers attached
 
 # %%
 import pandas as pd
@@ -51,7 +52,7 @@ rf = RandomForestClassifier(n_estimators=300, max_depth=10, min_samples_leaf=10,
 lr_proba = lr.predict_proba(X_test_s)[:, 1]
 
 # %% [markdown]
-# ## 1. Feature importance — what's the model actually using?
+# ## 1. Feature importance - what is the model using?
 
 # %%
 importances = pd.DataFrame({
@@ -70,33 +71,33 @@ colors = ["#E63946" if c > 0 else "#2E86AB" for c in top15["lr_coef"]]
 ax.barh(top15["feature"], top15["rf_importance"], color=colors)
 ax.set_xlabel("Random Forest feature importance")
 ax.set_title("Top 15 features driving churn predictions\n"
-             "(red = increases churn, blue = decreases churn — direction from LR)")
+             "(red = increases churn, blue = decreases churn - direction from LR)")
 plt.tight_layout()
 plt.savefig(VISUALS_DIR / "06_feature_importance.png", dpi=120, bbox_inches="tight")
 plt.show()
 
 # %% [markdown]
 # **What's pulling people out the door:**
-# - `InternetService_Fiber optic` — fiber customers churn more, even though they pay more
-# - `TotalCharges` — interesting: high *total* charges correlates with churn, while high
+# - `InternetService_Fiber optic` - fiber customers churn more, even though they pay more
+# - `TotalCharges` - interesting: high *total* charges correlates with churn, while high
 #   *monthly* charges interact with tenure (long-tenured customers naturally accumulate higher totals)
-# - `StreamingTV`, `StreamingMovies`, `MultipleLines` — add-on services correlate with leavers
-# - `PaymentMethod_Electronic check` — this one is consistent across studies of this dataset.
+# - `StreamingTV`, `StreamingMovies`, `MultipleLines` - add-on services correlate with leavers
+# - `PaymentMethod_Electronic check` - this one is consistent across studies of this dataset.
 #   Electronic-check payers churn more. The mechanism is debatable (less invested customer?
 #   higher friction at billing time?) but the signal is strong.
 #
 # **What's keeping people:**
-# - `tenure` (largest negative coefficient by far) — every additional month on the books
+# - `tenure` (largest negative coefficient by far) - every additional month on the books
 #   reduces churn risk meaningfully
-# - `Contract_Two year` and `Contract_One year` — locking customers in works exactly as expected
-# - `OnlineSecurity`, `TechSupport` — sticky add-ons. Customers who use these services
+# - `Contract_Two year` and `Contract_One year` - locking customers in works exactly as expected
+# - `OnlineSecurity`, `TechSupport` - sticky add-ons. Customers who use these services
 #   churn less, probably because they're more integrated into the product
 
 # %% [markdown]
 # ## 2. Risk segments
 #
 # Cut the test set into four risk bands using predicted probability. This is the table
-# the retention team can actually action.
+# the retention team could use for prioritization.
 
 # %%
 test_df = X_test.copy()
@@ -131,8 +132,8 @@ plt.show()
 # %% [markdown]
 # ## 3. The headline segment
 #
-# Predicted-probability bands are useful for triage. But the retention team wants a
-# segment they can describe in one sentence to a regional manager. The model points
+# Predicted-probability bands are useful for triage. But a team also needs a
+# segment they can describe in one sentence. The model points
 # to the same combination over and over: **month-to-month + high charges + low tenure.**
 
 # %%
@@ -158,27 +159,25 @@ print(f"Share of all churners:  {seg_churners/total_churners:.1%} of total churn
 # %% [markdown]
 # ## Recommendation
 #
-# **Action 1 — Targeted retention offers for the headline segment.** The 5% of customers
+# **Action 1 - Targeted retention offers for the headline segment.** The 5% of customers
 # on month-to-month contracts paying \$83+ per month with under a year of tenure churn at
-# ~75%. They generate ~14% of all churn. A retention offer — discount, bill credit, or
-# contract upgrade incentive — is high-leverage spend here. The 0.08 model threshold should
+# ~75%. They generate ~14% of all churn. A retention offer - discount, bill credit, or
+# contract upgrade incentive - is worth testing here before broad discounting. The 0.08 model threshold should
 # trigger this workflow automatically each month.
 #
-# **Action 2 — Push month-to-month customers toward annual contracts.** Two-year contract
+# **Action 2 - Push month-to-month customers toward annual contracts.** Two-year contract
 # customers churn at 2.8%, fifteen times less than month-to-month. This is the single
-# biggest structural lever the business has. Even a one-time promo to convert 10% of
-# month-to-month customers to one-year contracts would move the overall churn number more
-# than any model improvement.
+# biggest structural lever in the dataset. Even a small shift from month-to-month
+# to annual contracts could matter more than another round of model tuning.
 #
-# **Action 3 — Investigate fiber-optic experience.** Fiber customers pay more and churn
+# **Action 3 - Investigate fiber-optic experience.** Fiber customers pay more and churn
 # more. That's the inverse of what the business should expect from premium service. The
-# model can't tell us *why* (price comparison shopping? service quality? churn driven by
-# competitor pricing in fiber-served areas?), but it points clearly at where customer
-# research dollars should go.
+# model can't tell us *why* (price comparison shopping? service quality? competitor
+# offers?), but this is where I would ask follow-up questions.
 #
-# **Action 4 — Don't ship the model with a 0.5 threshold.** The threshold sweep in
+# **Action 4 - Do not use the model with a 0.5 threshold by default.** The threshold sweep in
 # notebook 03 showed the default loses money on this customer base. The optimal threshold
-# moves with retention economics — get the offer cost, churn cost, and success rate
+# moves with retention economics - get the offer cost, churn cost, and success rate
 # numbers from the business, then set the threshold there.
 
 # %% [markdown]

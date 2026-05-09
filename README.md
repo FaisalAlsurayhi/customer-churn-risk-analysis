@@ -4,9 +4,9 @@
 
 ## TL;DR
 
-A logistic regression on the IBM Telco Customer Churn dataset (~7,000 customers) reaches an **AUC of 0.836**, nearly matching the random forest's 0.841 while staying easier to explain. With realistic retention economics — \$50 to make an offer, \$500 average lost CLV per churn, 40% offer success — the **default 0.5 prediction threshold actually loses money**. The threshold that maximizes expected value sits down at **~0.08**, where recall jumps to 96% at the cost of precision.
+A logistic regression on the IBM Telco Customer Churn dataset (~7,000 customers) reaches an **AUC of 0.836**, close to the random forest's 0.841 while being easier to explain. With a simple retention-cost setup - \$50 to make an offer, \$500 average lost CLV per churn, and a 40% offer success rate - the **default 0.5 prediction threshold loses money**. The best threshold in this setup is much lower, around **0.08**, where recall jumps to 96% at the cost of precision.
 
-The model also points clearly at one segment the retention team should be working: **month-to-month customers paying over \$83/month with under a year of tenure churn at 75% versus a 24% baseline** — 5% of the customer base produces 14% of all churn.
+The model also points to one segment I would hand to a retention team first: **month-to-month customers paying over \$83/month with under a year of tenure churn at 75% versus a 24% baseline**. That is only 5% of the customer base, but it produces 14% of all churn.
 
 ## Visuals
 
@@ -27,39 +27,39 @@ The model also points clearly at one segment the retention team should be workin
 - **Source:** [IBM Telco Customer Churn](https://www.kaggle.com/datasets/blastchar/telco-customer-churn)
 - **Size:** 7,043 rows (7,032 after dropping 11 brand-new customers with no tenure history)
 - **Target:** `Churn` (Yes / No), 26.6% baseline rate
-- **Features:** 19 customer attributes — contract type, tenure, monthly/total charges, internet service type, payment method, demographic flags, add-on service flags
+- **Features:** 19 customer attributes, including contract type, tenure, monthly/total charges, internet service type, payment method, demographic flags, and add-on service flags
 
 ## Approach
 
-- Cleaned `TotalCharges` (loaded as object due to whitespace strings for tenure-zero customers), one-hot encoded categoricals.
-- 80/20 stratified train-test split.
-- Trained a logistic regression baseline and a tuned random forest (300 trees, max depth 10, min leaf 10).
-- Evaluated with AUC, precision, recall, F1, ROC and PR curves.
-- Built a business-cost model (offer cost / churn cost / offer success rate) and swept thresholds to find the dollar-optimal cutoff, not the F1-optimal one.
-- Translated probabilities into four risk segments and identified an interpretable headline segment for the retention team.
+- Cleaned `TotalCharges`, which loads as text because 11 tenure-zero customers have blank values.
+- Used an 80/20 stratified train-test split.
+- Trained logistic regression and random forest models.
+- Compared AUC, precision, recall, F1, ROC curves, and precision-recall curves.
+- Built a retention-cost threshold sweep instead of accepting the default 0.5 cutoff.
+- Turned predicted probabilities into risk bands and a plain-English retention segment.
 
 ## Key Findings
 
-- **Logistic regression matches random forest on every metric that matters.** AUC 0.836 vs. 0.841, and LR has higher recall and F1 at the default threshold. Ship the simpler model — there are no non-linearities here that the forest is uniquely catching.
-- **Contract type is the single largest signal.** Month-to-month customers churn at 42.7%; two-year contract customers churn at 2.8%. That's a 15× gap, and it dwarfs anything the model adds on top.
-- **Tenure is the second-largest.** First-year customers churn at 47.7%; year-four customers churn at 9.5%. Retention spend should be front-loaded.
-- **The default 0.5 threshold loses money on this customer base.** With \$50 offers and \$500 churn cost, the dollar-optimal threshold is around 0.08 — the model has to flag aggressively because missing a churner is 10× more expensive than a wasted offer. The sensitivity table in `03_threshold_business_cost.py` shows the optimum stays well below 0.5 across every plausible cost ratio.
-- **Headline segment for the retention team:** month-to-month + monthly charges ≥ \$83 + tenure < 12 months. **355 customers (5% of base), 75.2% churn rate, 14.3% of all churn.**
-- **Fiber-optic internet is a churn signal, not a stickiness signal.** Fiber customers pay more *and* churn more. The model can't tell us why; the business should investigate.
+- **Logistic regression is the model I would use here.** The random forest has a slightly higher AUC, 0.841 vs. 0.836, but LR has higher recall and F1 at the default threshold and is easier to explain. I do not see enough lift from the forest to justify making the story harder.
+- **Contract type is the biggest signal.** Month-to-month customers churn at 42.7%; two-year contract customers churn at 2.8%. That is about a 15x gap, and it is bigger than anything the model adds on top.
+- **Tenure matters almost as much.** First-year customers churn at 47.7%; year-four customers churn at 9.5%. Retention spend should be front-loaded.
+- **The default 0.5 threshold loses money on this customer base.** With \$50 offers and \$500 churn cost, the dollar-optimal threshold is around 0.08. The model has to flag aggressively because missing a churner is 10x more expensive than a wasted offer.
+- **Headline segment for the retention team:** month-to-month + monthly charges >= \$83 + tenure < 12 months. **355 customers (5% of base), 75.2% churn rate, 14.3% of all churn.**
+- **Fiber-optic internet is a churn signal, not a stickiness signal.** Fiber customers pay more *and* churn more. The model cannot tell me why, but this is the part I would investigate before assuming the product is working well.
 
 ## Recommendations
 
-1. Run the model monthly with the threshold set by the business's actual retention economics, not 0.5. The threshold sweep in notebook 03 is the artifact to share with finance.
-2. Target the headline segment with retention offers before any broad discounting — this is where dollar-per-effort is highest.
-3. Push month-to-month customers toward annual contracts. Even modest conversion shifts the company-wide churn number more than any model improvement.
-4. Open a separate investigation into fiber-optic customer experience. Premium-priced services should not have above-average churn.
+1. Run the model monthly with the threshold set by actual retention economics, not 0.5. The threshold sweep in notebook 03 is the piece I would share with finance.
+2. Target the headline segment with retention offers before any broad discounting. This is where the risk is concentrated enough to act on.
+3. Push month-to-month customers toward annual contracts. Even modest conversion could move the overall churn number more than another round of model tuning.
+4. Look into the fiber-optic customer experience. Premium-priced service should not have above-average churn.
 
 ## Limitations
 
-- Public dataset, not a real customer base. The cost numbers in notebook 03 are illustrative and need to be validated against actual retention economics.
-- No price or promotion history. We can see *that* fiber churns more; we can't see whether competitor pricing or service incidents are driving it.
-- Cross-sectional snapshot. A production system would update predictions monthly as customer behavior evolves.
-- Churn is binary in the data. Some customers downgrade rather than leave, and the model can't distinguish the two.
+- This is a public dataset, not a live customer base. The cost numbers in notebook 03 are examples and would need to be replaced with real finance inputs.
+- There is no price or promotion history. I can see *that* fiber customers churn more, but not whether price, service issues, or competitor offers are driving it.
+- The data is a cross-sectional snapshot. A production version would refresh predictions as customer behavior changes.
+- Churn is binary in the dataset. Some customers might downgrade rather than leave, and the model cannot separate those cases.
 
 ## Reproducibility
 
@@ -84,7 +84,7 @@ python notebooks/03_threshold_business_cost.py
 python notebooks/04_segments_and_recommendations.py
 ```
 
-The `.py` files are written in jupyter percent format (`# %%` cells). Open them in VS Code with the Python extension, or convert to `.ipynb` with `jupytext --to ipynb notebooks/*.py`.
+The `.py` files use jupyter percent format (`# %%` cells), so they can be opened as notebook-style scripts in VS Code.
 
 ---
 

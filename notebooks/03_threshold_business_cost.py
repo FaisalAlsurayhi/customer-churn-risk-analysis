@@ -1,11 +1,11 @@
 # %% [markdown]
-# # 03 — Threshold Selection by Business Cost
+# # 03 - Threshold Selection by Business Cost
 #
 # **Goal:** Find the probability threshold that maximizes expected dollar value, not F1.
 # F1-optimal and dollar-optimal are usually different thresholds, and the gap matters.
 #
-# The default 0.5 threshold is what every Kaggle notebook uses. It's almost never the
-# right answer for a real business decision.
+# The default 0.5 threshold is convenient, but it is not automatically the right
+# cutoff for a retention decision.
 
 # %%
 import pandas as pd
@@ -31,9 +31,8 @@ print(f"Test set size: {len(y_test):,}, churn rate {y_test.mean():.3f}")
 # %% [markdown]
 # ## Business assumptions
 #
-# These are the inputs the business has to own. Change them and the optimal threshold
-# moves. The whole point of this notebook is to make those tradeoffs explicit instead
-# of hiding them behind "we used 0.5 because everyone uses 0.5."
+# These are the inputs that would need real business numbers in production. Change
+# them and the optimal threshold moves.
 #
 # - **Retention offer cost:** what we spend per customer we contact (discount, free upgrade, support credit)
 # - **Churn cost:** average lost customer lifetime value when someone leaves
@@ -47,12 +46,12 @@ OFFER_SUCCESS_RATE = 0.40    # 40% of contacted at-risk customers stay
 print(f"Offer cost:        ${RETENTION_OFFER_COST}")
 print(f"Churn cost:        ${CHURN_COST}")
 print(f"Offer success:     {OFFER_SUCCESS_RATE:.0%}")
-print(f"Cost ratio:        {CHURN_COST/RETENTION_OFFER_COST:.0f}x — offering retention is way cheaper than losing a customer")
+print(f"Cost ratio:        {CHURN_COST/RETENTION_OFFER_COST:.0f}x - offering retention is much cheaper than losing a customer")
 
 # %% [markdown]
 # ## Expected value function
 #
-# For each predicted-positive customer (proba ≥ threshold), we make an offer:
+# For each predicted-positive customer (proba >= threshold), we make an offer:
 # - **True positive** (would have churned, accepts offer): save churn cost minus offer cost (40% of cases)
 # - **True positive** (would have churned, declines): lose offer cost AND churn cost (60% of cases)
 # - **False positive** (wouldn't have churned, gets offer): lose offer cost
@@ -117,15 +116,15 @@ print(f"Net swing from switching threshold: ${best['expected_value'] - default_r
 # %% [markdown]
 # ## What's actually happening
 #
-# At the default 0.5 threshold the model is too conservative — it only flags customers
+# At the default 0.5 threshold the model is too conservative. It only flags customers
 # we're very confident will churn, which means most actual churners walk out the door
 # without ever seeing a retention offer. Each missed churner costs us \$500. Each false
-# positive costs us \$50. With a 10× cost asymmetry, recall has to be far higher than
+# positive costs us \$50. With a 10x cost asymmetry, recall has to be far higher than
 # precision-balanced thresholds suggest.
 #
-# At the optimal threshold (around 0.08), we cast a much wider net — precision drops to
-# ~39% but recall climbs to ~96%. We waste offers on a lot of stayers, but we save almost
-# every real churner. The dollars work out heavily in our favor.
+# At the optimal threshold (around 0.08), we cast a much wider net. Precision drops to
+# ~39% but recall climbs to ~96%. We waste offers on a lot of stayers, but we catch
+# almost every real churner. That tradeoff is better under these cost assumptions.
 
 # %%
 fig, ax = plt.subplots(figsize=(10, 5))
@@ -173,12 +172,12 @@ sens_df = pd.DataFrame(sensitivity)
 print(sens_df.to_string(index=False))
 
 # %% [markdown]
-# **Read:** Across every plausible combination of cost ratio and offer success rate,
-# the optimal threshold sits well below 0.5 — the lowest is 0.08, the highest is around
+# **Read:** Across these cost-ratio and offer-success assumptions,
+# the optimal threshold sits well below 0.5. The lowest is 0.08, the highest is around
 # 0.30. The qualitative answer is robust even if the exact numbers shift.
 #
-# Whatever the business actually believes about retention offer economics, the default
-# 0.5 threshold is leaving money on the table.
+# The exact threshold should come from real economics, but 0.5 is clearly too high
+# in this setup.
 
 # %% [markdown]
 # ## Carry forward
